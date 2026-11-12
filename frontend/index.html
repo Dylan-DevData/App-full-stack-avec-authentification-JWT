@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🔐 Connexion - Todo App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
+
+    <h1 class="text-2xl font-bold text-slate-800 mb-1 text-center">📝 Todo App</h1>
+    <p class="text-slate-500 mb-6 text-sm text-center">Connecte-toi pour accéder à tes tâches</p>
+
+    <!-- Tabs Login / Register -->
+    <div class="flex mb-6 border-b border-slate-200">
+      <button id="tab-login" class="flex-1 py-2 text-indigo-600 border-b-2 border-indigo-600 font-medium">
+        Connexion
+      </button>
+      <button id="tab-register" class="flex-1 py-2 text-slate-500 font-medium">
+        Inscription
+      </button>
+    </div>
+
+    <!-- Formulaire -->
+    <form id="auth-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+        <input
+          id="email"
+          type="email"
+          required
+          placeholder="toi@example.com"
+          class="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Mot de passe</label>
+        <input
+          id="password"
+          type="password"
+          required
+          minlength="6"
+          placeholder="6 caractères minimum"
+          class="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+
+      <button
+        type="submit"
+        id="submit-btn"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition"
+      >
+        Se connecter
+      </button>
+    </form>
+
+    <div id="error" class="hidden bg-red-100 text-red-700 px-4 py-2 rounded-lg mt-4 text-sm"></div>
+
+  </div>
+
+  <script>
+    // ============ CONFIG ============
+    const API_URL = 'http://localhost:4000';
+    let mode = 'login';   // 'login' ou 'register'
+
+    // ============ DOM ============
+    const tabLogin    = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const form        = document.getElementById('auth-form');
+    const emailInput  = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const submitBtn   = document.getElementById('submit-btn');
+    const errorBox    = document.getElementById('error');
+
+    // ============ SI DÉJÀ CONNECTÉ → redirige vers todos ============
+    if (localStorage.getItem('token')) {
+      window.location.href = 'todos.html';
+    }
+
+    // ============ SWITCH login <-> register ============
+    function setMode(newMode) {
+      mode = newMode;
+      if (mode === 'login') {
+        tabLogin.className    = 'flex-1 py-2 text-indigo-600 border-b-2 border-indigo-600 font-medium';
+        tabRegister.className = 'flex-1 py-2 text-slate-500 font-medium';
+        submitBtn.textContent = 'Se connecter';
+      } else {
+        tabLogin.className    = 'flex-1 py-2 text-slate-500 font-medium';
+        tabRegister.className = 'flex-1 py-2 text-indigo-600 border-b-2 border-indigo-600 font-medium';
+        submitBtn.textContent = "S'inscrire";
+      }
+      errorBox.classList.add('hidden');
+    }
+
+    tabLogin.addEventListener('click',    () => setMode('login'));
+    tabRegister.addEventListener('click', () => setMode('register'));
+
+    // ============ ERREUR ============
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.classList.remove('hidden');
+    }
+
+    // ============ SOUMISSION ============
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.classList.add('hidden');
+
+      const email    = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      const endpoint = mode === 'login' ? '/auth/login' : '/auth/register';
+
+      try {
+        const res = await fetch(`${API_URL}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error || `Erreur ${res.status}`);
+          return;
+        }
+
+        // Succès → stocke le token et redirige
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        window.location.href = 'todos.html';
+      } catch (err) {
+        showError('Impossible de contacter le serveur : ' + err.message);
+      }
+    });
+  </script>
+
+</body>
+</html>
